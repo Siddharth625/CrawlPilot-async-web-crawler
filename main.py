@@ -1,9 +1,7 @@
-import requests
-from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
+from fastapi import FastAPI, HTTPException, BackgroundTasks
 from bs4 import BeautifulSoup
 from typing import List
 import asyncio
-from asyncio import QueueEmpty
 import httpx
 import json
 from backend.utils import preprocess_text, summarize_text, preprocess_text_cosine_matrix, calculate_cosine_distance_matrix, clean_links
