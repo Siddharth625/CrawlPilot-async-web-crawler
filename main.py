@@ -76,8 +76,8 @@ async def processResults():
         return {"message": "Completed", "results": results}
 
 @app.get("/get_report")
-async def reportPagination(pg_no: int, pg_size: int):
-    return get_entries_sorted_by_date(URL_REPO_FILE_PATH, pg_no, pg_size)
+async def reportPagination(pg_no: int, pg_size: int, sorting_norm: bool):
+    return get_entries_sorted_by_date(URL_REPO_FILE_PATH, pg_no, pg_size, sorting_norm)
 
 @app.post('/cosine_matrix')
 async def compute_cosine_matrix():
