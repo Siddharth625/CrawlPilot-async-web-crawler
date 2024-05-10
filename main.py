@@ -53,26 +53,26 @@ async def url_processing_in_background(urls: List[str]):
         result = await scrape_page(url)
         results.append(result)
     await result_queue.put(results)
-    # processing_completed.set()
+    processing_completed.set()
     print("Processing Done")
 
 @app.post("/crawl_bulk_urls/")
 async def crawl_bulk_urls(background_tasks: BackgroundTasks, urls: List[str]):
     # Start crawling in the background
-    # processing_completed.clear()
+    processing_completed.clear()
     background_tasks.add_task(url_processing_in_background, urls)
     return {"message": "Success - Crawling has begun!"}
     
-@app.get('/results/')
+@app.post('/results/')
 async def processResults():
-    # global result_queue
-    message = "In Process"
-    if result_queue.empty():
-        return {"message": message}
+    global result_queue, processing_completed
+    if not processing_completed.is_set():
+        return {"message": "In Process"}
+    elif result_queue.empty():
+        return {"message": "In Process"}
     else:
         results = await result_queue.get()
-        message = "Completed"
-        return {"message": message, "results": results}
+        return {"message": "Completed", "results": results}
 
 @app.get("/get_report")
 async def reportPagination(pg_no: int, pg_size: int):
