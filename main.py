@@ -21,23 +21,24 @@ processing_completed = asyncio.Event()
 async def scrape_page(url: str):
     global vectorized_embeddings
     try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            # H1 Heading of the page - Page Title
-            page_title = soup.find('h1').get_text() if soup.find('h1') else None
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, timeout=5)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, 'html.parser')
+                # H1 Heading of the page - Page Title
+                page_title = soup.find('h1').get_text() if soup.find('h1') else None
 
-            # Page Summary
-            paragraphs = soup.find_all("p")
-            text = " ".join([p.get_text() for p in paragraphs])
-            sentences, words = preprocess_text(text)
-            summary = summarize_text(sentences, words, COMPRESSION_PERCENTAGE)
-            if url not in vectorized_embeddings.keys():
-                vectorized_embeddings[url] = preprocess_text_cosine_matrix(text)
-            # Array of links embedded in the page
-            links = [link.get('href') for link in soup.find_all('a')]
-            links = clean_links(url, links)
-            return {"title": page_title, "summary": summary, "links": links}
+                # Page Summary
+                paragraphs = soup.find_all("p")
+                text = " ".join([p.get_text() for p in paragraphs])
+                sentences, words = preprocess_text(text)
+                summary = summarize_text(sentences, words, COMPRESSION_PERCENTAGE)
+                if url not in vectorized_embeddings.keys():
+                    vectorized_embeddings[url] = preprocess_text_cosine_matrix(text)
+                # Array of links embedded in the page
+                links = [link.get('href') for link in soup.find_all('a')]
+                links = clean_links(url, links)
+                return {"url_link": url,"title": page_title, "summary": summary, "links": links}
     except httpx.HTTPStatusError as e:
         # If request fails, raise HTTPException
         raise HTTPException(status_code=e.response.status_code, detail="Failed to fetch page")
