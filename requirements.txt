@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+pydantic
+bs4
+summarizer
+requests
+scipy==1.12
+nltk
+scikit-learn
+spacy
