@@ -73,4 +73,4 @@ def calculate_cosine_distance_matrix(vectorized_embeddings: dict) -> np.array:
             "shape": distance_matrix.shape
         }
     json_output = json.dumps(matrix_dict)
-    return (json_output)
+    return json_output

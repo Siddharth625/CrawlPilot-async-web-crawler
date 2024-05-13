@@ -89,7 +89,7 @@ async def reportPagination(pg_no: int, pg_size: int, sorting_norm: bool):
 @app.post('/cosine_matrix')
 async def compute_cosine_matrix():
     global vectorized_embeddings
-    return {"result" : calculate_cosine_distance_matrix(vectorized_embeddings)}
+    return calculate_cosine_distance_matrix(vectorized_embeddings)
 
 
 if __name__ == "__main__":
