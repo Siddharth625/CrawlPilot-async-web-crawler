@@ -67,12 +67,10 @@ def calculate_cosine_distance_matrix(vectorized_embeddings: dict) -> np.array:
             cosine_sim = cosine_similarity(embeddings[i], embeddings[j])[0][0]
             # Cosine distance is 1 - cosine similarity
             distance_matrix[i][j] = 1 - cosine_sim
-            distance_matrix[j][i] = distance_matrix[i][j]  # Cosine distance matrix is symmetric
+            distance_matrix[j][i] = distance_matrix[i][j]
     matrix_dict = {
             "matrix": distance_matrix.tolist(),
             "shape": distance_matrix.shape
         }
-
-    # Serialize the dictionary to JSON format
     json_output = json.dumps(matrix_dict)
     return (json_output)
