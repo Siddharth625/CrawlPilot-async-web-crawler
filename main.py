@@ -33,6 +33,9 @@ async def scrape_page(url: str):
                 summary = summarize_text(sentences, words, COMPRESSION_PERCENTAGE)
                 if url not in vectorized_embeddings.keys():
                     vectorized_embeddings[url] = preprocess_text_cosine_matrix(text)
+                if await update_url_repository(url, url_repo):
+                    with open(URL_REPO_FILE_PATH, "w") as json_file:
+                        json.dump(url_repo, json_file)
                 # Array of links embedded in the page
                 links = [link.get('href') for link in soup.find_all('a')]
                 links = clean_links(url, links)
@@ -45,9 +48,6 @@ async def url_processing_in_background(urls: List[str]):
     global url_repo, result_queue, processing_completed
     results = []
     for url in urls:
-        if await update_url_repository(url, url_repo):
-            with open(URL_REPO_FILE_PATH, "w") as json_file:
-               json.dump(url_repo, json_file)
         # Call the /scrape_page API for each URL and append the result to the list
         result = await scrape_page(url)
         results.append(result)
