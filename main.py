@@ -12,13 +12,13 @@ from backend.constants import URL_REPO_FILE_PATH, COMPRESSION_PERCENTAGE
 app = FastAPI()
 
 result_queue = asyncio.Queue()
-url_repo = {}
-vectorized_embeddings = {}
+url_repo = {} # Database
+vectorized_embeddings = {} # Database
 processing_completed = asyncio.Event()
 
 @app.post('/scrape_page/')
 async def scrape_page(url: str):
-    global vectorized_embeddings
+    global vectorized_embeddings, url_repo
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=5)
@@ -46,7 +46,7 @@ async def scrape_page(url: str):
         raise HTTPException(status_code=e.response.status_code, detail="Failed to fetch page")
 
 async def url_processing_in_background(urls: List[str]):
-    global url_repo, result_queue, processing_completed
+    global result_queue, processing_completed
     results = []
     for url in urls:
         try:
@@ -61,24 +61,25 @@ async def url_processing_in_background(urls: List[str]):
             print(f"An error occurred while processing URL {url}: {e}")
     await result_queue.put(results)
     processing_completed.set()
-    print("Processing Done")
 
 @app.post("/crawl_bulk_urls/")
 async def crawl_bulk_urls(background_tasks: BackgroundTasks, urls: List[str]):
     # Start crawling in the background
     processing_completed.clear()
     background_tasks.add_task(url_processing_in_background, urls)
-    return {"message": "Success - Crawling has begun!"}
+    return {"message": "Success! Crawling has started..."}
     
 @app.post('/results/')
 async def processResults():
-    global result_queue, processing_completed
+    global result_queue, processing_completed, url_repo
     if not processing_completed.is_set():
         return {"message": "In Process"}
     elif result_queue.empty():
         return {"message": "In Process"}
     else:
         results = await result_queue.get()
+        result_queue = asyncio.Queue()
+        url_repo = {}
         return {"message": "Completed", "results": results}
 
 @app.get("/get_report")
