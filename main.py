@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from bs4 import BeautifulSoup
 from typing import List
 import asyncio
+from asyncio import CancelledError
 import httpx
 import json
 from backend.utils import preprocess_text, summarize_text, preprocess_text_cosine_matrix, calculate_cosine_distance_matrix, clean_links
@@ -21,25 +22,25 @@ async def scrape_page(url: str):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url, timeout=5)
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.content, 'html.parser')
-                # H1 Heading of the page - Page Title
-                page_title = soup.find('h1').get_text() if soup.find('h1') else None
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, 'html.parser')
+            # H1 Heading of the page - Page Title
+            page_title = soup.find('h1').get_text() if soup.find('h1') else None
 
-                # Page Summary
-                paragraphs = soup.find_all("p")
-                text = " ".join([p.get_text() for p in paragraphs])
-                sentences, words = preprocess_text(text)
-                summary = summarize_text(sentences, words, COMPRESSION_PERCENTAGE)
-                if url not in vectorized_embeddings.keys():
-                    vectorized_embeddings[url] = preprocess_text_cosine_matrix(text)
-                if await update_url_repository(url, url_repo):
-                    with open(URL_REPO_FILE_PATH, "w") as json_file:
-                        json.dump(url_repo, json_file)
-                # Array of links embedded in the page
-                links = [link.get('href') for link in soup.find_all('a')]
-                links = clean_links(url, links)
-                return {"url_link": url,"title": page_title, "summary": summary, "links": links}
+            # Page Summary
+            paragraphs = soup.find_all("p")
+            text = " ".join([p.get_text() for p in paragraphs])
+            sentences, words = preprocess_text(text)
+            summary = summarize_text(sentences, words, COMPRESSION_PERCENTAGE)
+            if url not in vectorized_embeddings.keys():
+                vectorized_embeddings[url] = preprocess_text_cosine_matrix(text)
+            if await update_url_repository(url, url_repo):
+                with open(URL_REPO_FILE_PATH, "w") as json_file:
+                    json.dump(url_repo, json_file)
+            # Array of links embedded in the page
+            links = [link.get('href') for link in soup.find_all('a')]
+            links = clean_links(url, links)
+            return {"url_link": url,"title": page_title, "summary": summary, "links": links}
     except httpx.HTTPStatusError as e:
         # If request fails, raise HTTPException
         raise HTTPException(status_code=e.response.status_code, detail="Failed to fetch page")
@@ -48,9 +49,16 @@ async def url_processing_in_background(urls: List[str]):
     global url_repo, result_queue, processing_completed
     results = []
     for url in urls:
-        # Call the /scrape_page API for each URL and append the result to the list
-        result = await scrape_page(url)
-        results.append(result)
+        try:
+            result = await scrape_page(url)
+            results.append(result)
+        except HTTPException as e:
+            print(f"Skipping URL {url} due to HTTPException: {e}")
+        except CancelledError:
+            print("Processing cancelled.")
+            break
+        except Exception as e:
+            print(f"An error occurred while processing URL {url}: {e}")
     await result_queue.put(results)
     processing_completed.set()
     print("Processing Done")
