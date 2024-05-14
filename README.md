@@ -7,3 +7,4 @@
 
 
 #### Swagger UI - add /docs# to the localhost URL (http://127.0.0.1:8000/docs#)
+#### Figma - https://www.figma.com/board/2iKyBR5id9qNLukSJ269Z5/CrawlPilot?node-id=0-1&t=YG885mhpT8Ojwxn9-0
